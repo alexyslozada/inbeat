@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Find IG influencers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app" class="container-md">
+        <form>
+            <div class="mb-3">
+                <label for="search_user" class="form-label">Username:</label>
+                <input type="text" class="form-control" id="search_user" v-model="search_user">
+                <div id="emailHelp" class="form-text">You can use @ for the username.</div>
+            </div>
+            <button class="btn btn-primary" id="search" @click="search">Search</button>
+        </form>
+        <div id="error" v-if="is_error">
+            {{ error_message }}
+        </div>
+        <div id="influencer" v-else v-if="has_data">
+            <p>Username: {{ username }}</p>
+            <div>
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Followers</h5>
+                                <p class="card-text">{{ followers }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Following</h5>
+                                <p class="card-text">{{ following }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Posts</h5>
+                                <p class="card-text">{{ amount_posts }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Engagement rate</h5>
+                                <p class="card-text">{{ engagement_rate }}%</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Avg Likes</h5>
+                                <p class="card-text">{{ avg_likes }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Avg Comments</h5>
+                                <p class="card-text">{{ avg_comments }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <p v-if="is_private">The profile is private, we can't retrieve the posts</p>
+            </div>
+            <div>
+                <ul>
+                    <li v-for="post in posts">
+                        <div>
+                            <span>Likes: {{ post.likes }}</span>
+                            <span>Comments: {{ post.comments }}</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3"></script>
+    <script>
+        const { createApp, ref } = Vue
+
+        createApp({
+            setup() {
+                const search_user = ref("")
+                const has_data = ref(false)
+                const is_error = ref(false)
+                const error_message = ref("")
+
+                const username = ref("")
+                const followers = ref(0)
+                const following = ref(0)
+                const amount_posts = ref(0)
+                const avg_likes = ref(0)
+                const avg_comments = ref(0)
+                const engagement_rate = ref(0)
+                const is_private = ref(false)
+                const posts = ref([])
+
+                const search = async (e) => {
+                    e.preventDefault()
+                    is_error.value = false
+                    error_message.value = ""
+
+                    const response = await fetch(`/api/v1/influencer/${search_user.value}`)
+                    const data = await response.json()
+                    if (response.status !== 200) {
+                        is_error.value = true
+                        error_message.value = data.error
+                        return
+                    }
+
+                    has_data.value = true
+                    search_user.value = ""
+                    username.value = data.data.username
+                    followers.value = data.data.followers
+                    following.value = data.data.following
+                    amount_posts.value = data.data.amount_posts
+                    avg_likes.value = data.data.avg_likes
+                    avg_comments.value = data.data.avg_comments
+                    engagement_rate.value = data.data.engagement_rate.toFixed(2)
+                    is_private.value = data.data.is_private
+                    posts.value = data.data.posts
+                }
+
+                return {
+                    search_user,
+                    has_data,
+                    is_error,
+                    error_message,
+                    username,
+                    followers,
+                    following,
+                    amount_posts,
+                    avg_likes,
+                    avg_comments,
+                    engagement_rate,
+                    is_private,
+                    posts,
+                    search,
+                }
+            }
+        }).mount("#app")
+    </script>
+</body>
+</html>

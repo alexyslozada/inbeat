@@ -91,12 +91,15 @@ func doRequest(url string) ([]byte, error) {
 	}
 
 	data := buf.Bytes()
-	fmt.Println(string(data))
 
 	return data, nil
 }
 
 func parseBody(data []byte) (Model, error) {
+	if string(data[:14]) == "<!DOCTYPE html" {
+		return Model{}, fmt.Errorf("oh, looks like we are blocked ☹️")
+	}
+
 	title, _ := jsonparser.GetString(data, "title")
 	if strings.EqualFold(title, "Restricted profile") {
 		return Model{}, fmt.Errorf("we couldn't get this user's info. Sorry")
