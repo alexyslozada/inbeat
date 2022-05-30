@@ -1,4 +1,4 @@
-package main
+package backend
 
 type Model struct {
 	Username       string  `json:"username"`
@@ -7,6 +7,7 @@ type Model struct {
 	Followers      int64   `json:"followers"`
 	Following      int64   `json:"following"`
 	AmountPosts    int64   `json:"amount_posts"`
+	IsPrivate      bool    `json:"is_private"`
 	EngagementRate float64 `json:"engagement_rate"`
 	AvgLikes       int64   `json:"avg_likes"`
 	AvgComments    int64   `json:"avg_comments"`

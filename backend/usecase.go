@@ -1,4 +1,4 @@
-package main
+package backend
 
 import (
 	"bytes"
@@ -69,7 +69,12 @@ func doRequest(url string) ([]byte, error) {
 		log.Print(errWrap)
 		return nil, errWrap
 	}
-	defer response.Body.Close()
+	defer func() {
+		err := response.Body.Close()
+		if err != nil {
+			log.Printf("couldn't close the body: %v", err)
+		}
+	}()
 
 	if response.StatusCode != 200 {
 		errWrap := fmt.Errorf("we get an unexpected status code: %d", response.StatusCode)
@@ -127,38 +132,51 @@ func parseBody(data []byte) (Model, error) {
 		log.Printf("can't parse amount posts: %v", err)
 	}
 
-	var posts Posts
-	_, err = jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, arrErr error) {
-		postPhoto, internalErr := jsonparser.GetString(value, "node", "display_url")
-		if internalErr != nil {
-			log.Printf("can't parse string post photo: %v", internalErr)
-		}
-
-		likes, internalErr := jsonparser.GetInt(value, "node", "edge_liked_by", "count")
-		if internalErr != nil {
-			log.Printf("can't parse int post likes: %v", internalErr)
-		}
-
-		comments, internalErr := jsonparser.GetInt(value, "node", "edge_media_to_comment", "count")
-		if internalErr != nil {
-			log.Printf("can't parse int post comments: %v", internalErr)
-		}
-
-		post := Post{
-			Photo:    postPhoto,
-			Likes:    likes,
-			Comments: comments,
-		}
-
-		posts = append(posts, post)
-	}, "graphql", "user", "edge_owner_to_timeline_media", "edges")
+	isPrivate, err := jsonparser.GetBoolean(data, "graphql", "user", "is_private")
 	if err != nil {
-		log.Printf("can't read posts data: %v", err)
+		log.Printf("can't parse is_private field: %v", err)
 	}
 
-	avgLikes := posts.AvgLikes()
-	avgComments := posts.AvgComments()
-	engagementRate := float64(avgLikes+avgComments) / float64(followers)
+	var posts Posts
+	var avgLikes int64
+	var avgComments int64
+	var engagementRate float64
+
+	// We can only read this information if the profile is public
+	if !isPrivate {
+		_, err = jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, arrErr error) {
+			postPhoto, internalErr := jsonparser.GetString(value, "node", "display_url")
+			if internalErr != nil {
+				log.Printf("can't parse string post photo: %v", internalErr)
+			}
+
+			likes, internalErr := jsonparser.GetInt(value, "node", "edge_liked_by", "count")
+			if internalErr != nil {
+				log.Printf("can't parse int post likes: %v", internalErr)
+			}
+
+			comments, internalErr := jsonparser.GetInt(value, "node", "edge_media_to_comment", "count")
+			if internalErr != nil {
+				log.Printf("can't parse int post comments: %v", internalErr)
+			}
+
+			post := Post{
+				Photo:    postPhoto,
+				Likes:    likes,
+				Comments: comments,
+			}
+
+			posts = append(posts, post)
+		}, "graphql", "user", "edge_owner_to_timeline_media", "edges")
+		if err != nil {
+			log.Printf("can't read posts data: %v", err)
+		}
+
+		avgLikes = posts.AvgLikes()
+		avgComments = posts.AvgComments()
+		engagementRate = float64(avgLikes+avgComments) / float64(followers) * 100
+	}
+
 	model := Model{
 		Username:       userName,
 		Photo:          photo,
@@ -166,6 +184,7 @@ func parseBody(data []byte) (Model, error) {
 		Followers:      followers,
 		Following:      following,
 		AmountPosts:    amountPosts,
+		IsPrivate:      isPrivate,
 		EngagementRate: engagementRate,
 		AvgLikes:       avgLikes,
 		AvgComments:    avgComments,
