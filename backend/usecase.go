@@ -38,30 +38,6 @@ func doRequest(url string) ([]byte, error) {
 	}
 	request.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.61 Safari/537.36")
 
-	request.AddCookie(&http.Cookie{
-		Name:   "csrftoken",
-		Value:  "cFAOcSDAgGDFs7F9IQOZAv0fvZ91henc",
-		Path:   "/",
-		Domain: ".instagram.com",
-		Secure: true,
-	})
-	request.AddCookie(&http.Cookie{
-		Name:     "sessionid",
-		Value:    "569876308%3AoEoWx9RVnN60eg%3A7",
-		Path:     "/",
-		Domain:   ".instagram.com",
-		Secure:   true,
-		HttpOnly: true,
-	})
-	request.AddCookie(&http.Cookie{
-		Name:     "ig_did",
-		Value:    "A282F4B1-B2CC-4C34-A678-7EC5A92A7F3E",
-		Path:     "/",
-		Domain:   ".instagram.com",
-		Secure:   true,
-		HttpOnly: true,
-	})
-
 	client := http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
